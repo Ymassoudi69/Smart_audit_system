@@ -1,26 +1,22 @@
 #ifndef CAMERA_H
 #define CAMERA_H
-
+#include <QMainWindow>
 #include <QDialog>
 #include <QCamera>
 #include <QCameraImageCapture>
 #include <QMediaRecorder>
-
 #include <QMediaService>
 #include <QMediaRecorder>
 #include <QCameraViewfinder>
 #include <QCameraInfo>
 #include <QMediaMetaData>
-
 #include <QPalette>
 
-
-namespace Ui
-{
+namespace Ui {
 class camera;
 }
 
-class camera : public QDialog
+class camera : public QMainWindow
 {
     Q_OBJECT
 
@@ -28,14 +24,16 @@ public:
     explicit camera(QWidget *parent = nullptr);
     ~camera();
 
+private:
+    Ui::camera *ui;
+
 private slots:
     void setCamera(const QCameraInfo &cameraInfo);
     void readyForCapture(bool ready);
-
-    void on_takeImageButton_clicked();
+    void on_takeImageButtonClient_clicked();
 
 private:
-    Ui::camera *ui;
+    //Ui::camera *ui;
     QCamera *Camera = nullptr;
     QCameraImageCapture *imageCapture = nullptr;
     QMediaRecorder* mediaRecorder = nullptr;

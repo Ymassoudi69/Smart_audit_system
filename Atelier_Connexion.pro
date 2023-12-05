@@ -3,12 +3,12 @@
 # Project created by QtCreator 2018-10-26T21:45:23
 #
 #-------------------------------------------------
+
+QT       += core gui sql
 QT       += core gui sql network multimedia multimediawidgets charts printsupport widgets axcontainer
 QT       += sql
-QT       += core gui sql
 QT += network
 QT       += printsupport
-
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -53,6 +53,3 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
-
-RESOURCES += \
-    img.qrc

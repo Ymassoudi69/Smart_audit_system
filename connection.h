@@ -6,13 +6,12 @@
 #include <QLineEdit>
 #include <QValidator>
 
+
 class Connection
 {
 public:
     Connection();
     bool createconnect();
 };
-
-
 
 #endif // CONNECTION_H

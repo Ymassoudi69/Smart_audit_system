@@ -6,11 +6,8 @@
 #include "MainWindow.h"
 #include <QtSql/QSqlQueryModel>
 
-
-
 class Client
 {
-
 private:
     QString ID_CLIENT;
     QString NOM;
@@ -27,14 +24,12 @@ public:
     Client(QString, QString,QString,QString, QString,QString,int ,int );
 
 
-    bool ajouter(Ui::MainWindow*ui);
-    bool supprimer(Ui::MainWindow *ui);
-    void AfficherTable(Ui::MainWindow *ui);
-    bool Modifier(Ui::MainWindow *ui);
+    bool AjouterClient(Ui::MainWindow*ui);
+    void AfficherClientTable(Ui::MainWindow *ui);
+    bool ModifierClient(Ui::MainWindow *ui);
+    bool SupprimerClient(Ui::MainWindow *ui);
     QSqlQueryModel * rechercherClient(QString ID_CLIENT);
     QSqlQueryModel * trierClient();
-
-
 };
 
 #endif // CLIENT_H

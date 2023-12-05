@@ -1,14 +1,15 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "client.h"
+#include "camera.h"
 #include "smtp.h"
+#include<QtDebug>
 #include <QDebug>
 #include <QSqlQuery>
 #include<QSqlQueryModel>
+#include <QTableWidget>
 #include<QTableView>
 #include <QMessageBox>
-#include <QTableWidget>
-#include<QtDebug>
 #include <QLineEdit>
 #include <QValidator>
 #include <QDialog>
@@ -17,9 +18,7 @@
 #include <QFileDialog>
 #include <QPdfWriter>
 #include <QPainter>
-#include <qcustomplot.h>
-#include <QSqlRecord>
-#include "camera.h"
+
 
 
 class NoNumberValidator : public QValidator {
@@ -36,24 +35,20 @@ public:
     }
 };
 
-MainWindow::MainWindow(QWidget * parent) :
+
+MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
-
     ui->setupUi(this);
     NoNumberValidator *validator = new NoNumberValidator;
-         ui->Nom_3->setValidator(validator);
-          ui->Prenom_3->setValidator(validator);
-          ui->adresse_3->setValidator(validator);
-          ui->Email_3->setValidator(new QRegularExpressionValidator(QRegularExpression(R"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"), ui->Email_3));
+          ui->NomClient_3->setValidator(validator);
+          ui->PrenomClient_3->setValidator(validator);
+          ui->adresseClient_3->setValidator(validator);
+          ui->EmailClient_3->setValidator(new QRegularExpressionValidator(QRegularExpression(R"([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})"), ui->EmailClient_3));
           ui->idClient_3->setValidator(new QIntValidator(0,99999999,this));
-          //ui->idProduit_3->setValidator(validator);
-          ui->cin_3->setValidator(new QIntValidator(0,99999999,this));
-          ui->num_3->setValidator(new QIntValidator(0,99999999,this));
-
-          connect(ui->sendBtn, SIGNAL(clicked()),this, SLOT(sendMail()));
-         // connect(ui->browseBtn, SIGNAL(clicked()), this, SLOT(browse()));
+          ui->cinClient_3->setValidator(new QIntValidator(0,99999999,this));
+          ui->numClient_3->setValidator(new QIntValidator(0,99999999,this));
 }
 
 MainWindow::~MainWindow()
@@ -61,38 +56,75 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_Ajouter_clicked()
-{
-     Client b;
-     b.ajouter(ui);
-
-}
-
-
-void MainWindow::on_afficher3_clicked()
+//l'ajout:
+void MainWindow:: on_AjouterClient_clicked()
 {
     Client b;
-    b.AfficherTable(ui);
+    b.AjouterClient(ui);
 }
 
-void MainWindow::on_Supprimer_clicked()
+//l'affichage:
+void MainWindow:: on_AfficherClient_clicked()
 {
     Client b;
-    b.supprimer(ui);
-    b.AfficherTable(ui);
+    b.AfficherClientTable(ui);
 }
-void MainWindow::on_Refrachir_2_clicked()
+
+//modification:
+void MainWindow::on_ModifierClient_clicked()
+{
+    Client b ;
+    b.ModifierClient(ui);
+}
+void MainWindow:: on_RefrachirClientModifier_clicked()
 {
     Client b;
-    b.AfficherTable(ui);
-
+    b.AfficherClientTable(ui);
+        if (ui->ViewClientModifier->model()->rowCount() > 0) {
+            QModelIndex firstIndex = ui->ViewClientModifier->model()->index(0, 0);
+            ui->ViewClientModifier->setCurrentIndex(firstIndex);
+            on_ViewClientModifier_clicked(firstIndex);
+        }
 }
-
-void MainWindow::on_viewclient3_activated(const QModelIndex &index)
+void MainWindow::on_ViewClientModifier_clicked(const QModelIndex &index)
 {
-
     int selectedRow = index.row();
-       int ID_CLIENT = ui->viewclient3->model()->data(ui->viewclient3->model()->index(selectedRow, 0)).toInt();
+     int ID_CLIENT = ui->ViewClientModifier->model()->data(ui->ViewClientModifier->model()->index(selectedRow, 0)).toInt();
+
+     QSqlQuery q;
+     q.prepare("SELECT * FROM CLIENTS WHERE ID_CLIENT = :idClient");
+     q.bindValue(":idClient", ID_CLIENT);
+
+     if (q.exec() && q.first()) {
+         ui->idClient->setText(q.value(0).toString());
+         ui->NomClient->setText(q.value(1).toString());
+         ui->PrenomClient->setText(q.value(2).toString());
+         ui->EmailClient->setText(q.value(3).toString());
+         ui->AdresseClient->setText(q.value(4).toString());
+         ui->idProduitClient->setText(q.value(5).toString());
+         ui->cinClient->setText(q.value(6).toString());
+         ui->numClient->setText(q.value(7).toString());
+     }
+}
+
+//suppression:
+ void MainWindow::on_SupprimerClient_clicked()
+ {
+     Client b;
+     b.SupprimerClient(ui);
+     b.AfficherClientTable(ui);
+ }
+
+void MainWindow::on_RefrachirClient_clicked()
+{
+    Client b;
+    b.AfficherClientTable(ui);
+}
+
+void MainWindow::on_ViewClientSupprimer_activated(const QModelIndex &index)
+{
+    int selectedRow = index.row();
+       int ID_CLIENT = ui->ViewClientSupprimer->model()->data(ui->ViewClientSupprimer->model()->index(selectedRow, 0)).toInt();
        QSqlQuery q;
        ui->id_clientD->setText(QString::number(ID_CLIENT));
 
@@ -105,182 +137,95 @@ void MainWindow::on_viewclient3_activated(const QModelIndex &index)
 
        if (confirmationResult == QMessageBox::Yes) {
            Client b;
-           if (b.supprimer(ui)) {
-               b.AfficherTable(ui);
+           if (b.SupprimerClient(ui)) {
+               b.AfficherClientTable(ui);
                ui->id_clientD->clear();
            }
        }
 }
 
-void MainWindow::on_Modifier_clicked()
-{
-    Client b ;
-    b.Modifier(ui);
-}
+//recherche:
+ void MainWindow::on_RechercheClient_clicked()
+ {
+     QString valeur = ui->id_clientR_2->text();
+        Client *b = new Client();
+        QSqlQueryModel *resultModel = b->rechercherClient(valeur);
 
-void MainWindow::on_Refrachir_clicked()
-
-{
-    Client b;
-    b.AfficherTable(ui);
-        if (ui->viewclient2->model()->rowCount() > 0) {
-            QModelIndex firstIndex = ui->viewclient2->model()->index(0, 0);
-            ui->viewclient2->setCurrentIndex(firstIndex);
-            on_viewclient2_clicked(firstIndex);
+        if (resultModel->rowCount() > 0) {
+            ui->ViewClientRecherche->setModel(resultModel);
+        } else {
+            // Gérer le cas où le client n'a pas été trouvé
+            QMessageBox msgBox;
+            msgBox.setText("Client non trouvé.");
+            msgBox.exec();
         }
+ }
 
-
-}
-
-void MainWindow::on_viewclient2_clicked(const QModelIndex &index)
-{
-       int selectedRow = index.row();
-        int ID_CLIENT = ui->viewclient2->model()->data(ui->viewclient2->model()->index(selectedRow, 0)).toInt();
-
-        QSqlQuery q;
-        q.prepare("SELECT * FROM CLIENTS WHERE ID_CLIENT = :idClient");
-        q.bindValue(":idClient", ID_CLIENT);
-
-        if (q.exec() && q.first()) {
-            ui->idClient->setText(q.value(0).toString());
-            ui->Nom->setText(q.value(1).toString());
-            ui->Prenom->setText(q.value(2).toString());
-            ui->Email->setText(q.value(3).toString());
-            ui->Adresse->setText(q.value(4).toString());
-            ui->idProduit->setText(q.value(5).toString());
-            ui->cin->setText(q.value(6).toString());
-            ui->num->setText(q.value(7).toString());
-        }
-}
-
-void MainWindow::on_Recherche_2_clicked()
-{
-    QString valeur = ui->id_clientR_2->text();
-       Client *b = new Client();
-       QSqlQueryModel *resultModel = b->rechercherClient(valeur);
-
-       if (resultModel->rowCount() > 0) {
-           ui->ViewClientRecherche->setModel(resultModel);
-       } else {
-           // Gérer le cas où le client n'a pas été trouvé
-           QMessageBox msgBox;
-           msgBox.setText("Client non trouvé.");
-           msgBox.exec();
-       }
-}
-
-void MainWindow::on_trier_clicked()
+//tri et exportation on pdf:
+void MainWindow:: on_trierClient_clicked()
 {
     Client *b= new Client();
-    ui->triClient->setModel(b->trierClient());
+    ui->ViewTriClient->setModel(b->trierClient());
 }
 
-void MainWindow::sendmail()
+void MainWindow::on_ecxporter_en_pdf_client_clicked()
 {
-    smtp* smtp = new class smtp (ui->uname->text(), ui->paswd->text(), ui->server->text(),ui->port->text().toUShort());
-        connect(smtp, SIGNAL(status(QString)), this, SLOT(mailSent(QString)));
+    QPrinter printer;
+    QPrintDialog dialog(&printer, this);
 
-            smtp->sendMaile(ui->uname->text(), ui->rcpt->text() , ui->subject->text(),ui->msg->toPlainText());
+    if (dialog.exec() == QDialog::Accepted) {
 
-}
-void MainWindow::mailSent(QString status)
-{
-    if(status == "Message sent")
-        QMessageBox::information( nullptr, tr( "Qt Simple SMTP client" ), tr( "Message sent!\n\n" ) );
-}
+        printer.setPageSize(QPrinter::A4);
+        printer.setOrientation(QPrinter::Landscape);
 
+        QPainter painter(&printer);
+        painter.begin(&printer);
 
-void MainWindow::on_sendBtn_clicked()
-{
-    sendmail();
-}
+        QRect pageRect = printer.pageRect();
+        painter.setViewport(pageRect.x(), pageRect.y(), pageRect.width(), pageRect.height());
+        painter.setWindow(pageRect);
 
 
-void MainWindow::on_ecxporter_en_pdf_clicked()
-{
+        QString imagePath = QDir::homePath() + "C:/Users/chino info/Desktop/Projet/img/logo.png";
+        QImage image(imagePath);
+        if (!image.isNull()) {
 
-       QPrinter printer;
-       QPrintDialog dialog(&printer, this);
+            QSize imageSize(100, 100);
+            QPoint imagePos(50, 50);
+            QRect imageRect(imagePos, imageSize);
+            painter.drawImage(imageRect, image);
+        }
 
-       if (dialog.exec() == QDialog::Accepted) {
+        QSqlQueryModel *model = qobject_cast<QSqlQueryModel *>(ui->ViewTriClient->model());
 
-           printer.setPageSize(QPrinter::A4);
-           printer.setOrientation(QPrinter::Landscape);
-
-           QPainter painter(&printer);
-           painter.begin(&printer);
-
-           QRect pageRect = printer.pageRect();
-           painter.setViewport(pageRect.x(), pageRect.y(), pageRect.width(), pageRect.height());
-           painter.setWindow(pageRect);
-
-
-           QString imagePath = QDir::homePath() + "c:/Users/chino info/Desktop/Projet/img/logo.png";
-           QImage image(imagePath);
-           if (!image.isNull()) {
-
-               QSize imageSize(100, 100);
-               QPoint imagePos(50, 50);
-               QRect imageRect(imagePos, imageSize);
-               painter.drawImage(imageRect, image);
-           }
-
-           QSqlQueryModel *model = qobject_cast<QSqlQueryModel *>(ui->triClient->model());
-
-           const int margin = 180;
-           const int headerHeight = 50;
-           int rowHeight = 20;
-           int columnWidth = 150;
-           int y = margin + headerHeight;
+        const int margin = 180;
+        const int headerHeight = 50;
+        int rowHeight = 20;
+        int columnWidth = 150;
+        int y = margin + headerHeight;
 
 
-           for (int col = 0; col < model->columnCount(); ++col) {
-               QString headerText = model->headerData(col, Qt::Horizontal).toString();
-               painter.drawText(margin + col * columnWidth, y, columnWidth, headerHeight, Qt::AlignCenter, headerText);
-           }
-           y += headerHeight;
+        for (int col = 0; col < model->columnCount(); ++col) {
+            QString headerText = model->headerData(col, Qt::Horizontal).toString();
+            painter.drawText(margin + col * columnWidth, y, columnWidth, headerHeight, Qt::AlignCenter, headerText);
+        }
+        y += headerHeight;
 
 
-           for (int row = 0; row < model->rowCount(); ++row) {
-               for (int col = 0; col < model->columnCount(); ++col) {
-                   QString cellValue = model->data(model->index(row, col)).toString();
-                   painter.drawText(margin + col * columnWidth, y, columnWidth, rowHeight, Qt::AlignLeft | Qt::AlignVCenter, cellValue);
-               }
-               y += rowHeight;
-           }
+        for (int row = 0; row < model->rowCount(); ++row) {
+            for (int col = 0; col < model->columnCount(); ++col) {
+                QString cellValue = model->data(model->index(row, col)).toString();
+                painter.drawText(margin + col * columnWidth, y, columnWidth, rowHeight, Qt::AlignLeft | Qt::AlignVCenter, cellValue);
+            }
+            y += rowHeight;
+        }
 
-           painter.end();
-       }
+        painter.end();
+    }
 }
 
 
-void MainWindow::on_camera_clicked()
-{
-    c= new camera();
-    c->show();
-}
-
-void MainWindow::on_play_clicked()
-{
-    player= new QMediaPlayer;
-    vw=new QVideoWidget;
-
-    auto filename=QFileDialog::getOpenFileName(this,"import mp4 file",QDir::rootPath(),"Excel Files(*.JPG)");
-
-
-    player->setVideoOutput(vw);
-    player->setMedia(QUrl::fromLocalFile(filename));
-    vw->setGeometry(100,100,300,400);
-    vw->show();
-    player->play();
-}
-
-void MainWindow::on_stop_clicked()
-{
-    player->stop();
-    vw->close();
-}
-
+//statistique:
 QVector<double> MainWindow::Statistique_type()
 {
     QSqlQuery q;
@@ -377,9 +322,80 @@ void MainWindow::makePlot_type()
 
 }
 
-void MainWindow::on_stat_clicked()
+void MainWindow::on_statClient_clicked()
 {
-  MainWindow::makePlot_type();
+ MainWindow::makePlot_type();
 }
 
 
+//image:
+void MainWindow::on_cameraClient_clicked()
+{
+    c= new camera();
+    c->show();
+}
+
+void MainWindow::on_playClient_clicked()
+{
+    player= new QMediaPlayer;
+    vw=new QVideoWidget;
+    auto filename=QFileDialog::getOpenFileName(this,"import mp4 file",QDir::rootPath(),"Excel Files(*.JPG)");
+    player->setVideoOutput(vw);
+    player->setMedia(QUrl::fromLocalFile(filename));
+    vw->setGeometry(100,100,300,400);
+    vw->show();
+    player->play();
+}
+
+void MainWindow::on_stopClient_clicked()
+{
+    player->stop();
+    vw->close();
+}
+
+//mailing:
+void   MainWindow::sendMail()
+{
+    Smtp* smtp = new Smtp("amira.jmaiel@esprit.tn",ui->mail_passClient->text(), "smtp.gmail.com");
+    connect(smtp, SIGNAL(status(QString)), this, SLOT(mailSent(QString)));
+
+    if( !files.isEmpty() )
+        smtp->sendMail("amira.jmaiel@esprit.tn", ui->rcptClient->text() , ui->subjectClient->text(),ui->msgClient->toPlainText(), files );
+    else
+        smtp->sendMail("amira.jmaiel.tn", ui->rcptClient->text() , ui->subjectClient->text(),ui->msgClient->toPlainText());
+}
+void   MainWindow::mailSent(QString status)
+{
+
+    if(status == "Message sent")
+        QMessageBox::warning( nullptr, tr( "Qt Simple SMTP client" ), tr( "Message sent!\n\n" ) );
+    ui->rcptClient->clear();
+    ui->subjectClient->clear();
+    ui->fileClient->clear();
+    ui->msgClient->clear();
+    ui->mail_passClient->clear();
+}
+
+
+void MainWindow::on_browseBtnClient_clicked()
+{
+
+    files.clear();
+    QFileDialog dialog(this);
+    dialog.setDirectory(QDir::homePath());
+    dialog.setFileMode(QFileDialog::ExistingFiles);
+
+    if (dialog.exec())
+        files = dialog.selectedFiles();
+
+    QString fileListString;
+    foreach(QString file, files)
+        fileListString.append( "\"" + QFileInfo(file).fileName() + "\" " );
+
+    ui->fileClient->setText( fileListString );
+}
+
+void MainWindow::on_sendBtn_Client_clicked()
+{
+    sendMail();
+}

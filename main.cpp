@@ -1,8 +1,10 @@
 #include "mainwindow.h"
+#include "connection.h"
 #include <QApplication>
 #include <QMessageBox>
 #include <QDebug>
-#include "connection.h"
+
+
 
 int main(int argc, char *argv[])
 {
@@ -25,5 +27,3 @@ int main(int argc, char *argv[])
 
     return a.exec();
 }
-
-

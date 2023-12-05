@@ -1,0 +1,13 @@
+INPUT(
+./release\camera.o
+./release\client.o
+./release\main.o
+./release\mainwindow.o
+./release\connection.o
+./release\qcustomplot.o
+./release\smtp.o
+./release\moc_camera.o
+./release\moc_mainwindow.o
+./release\moc_qcustomplot.o
+./release\moc_smtp.o
+);
